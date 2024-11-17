@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "@/styles/globals.css";
+import { Providers } from '@/components/providers';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -14,8 +15,26 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Shilp.io",
-  description: "Shilp.io",
+  title: {
+    template: "%s | RE",
+    default: "Atom | Requirements Engineering",
+  },
+  description:
+    "AI-powered requirements engineering tool for analyzing and validating engineering requirements against regulatory documents.",
+  keywords: [
+    "requirements engineering",
+    "regulatory compliance",
+    "AI analysis",
+    "engineering requirements",
+    "document analysis",
+  ],
+  authors: [
+    {
+      name: "Shilp.io",
+      url: "https://your-company.com",
+    },
+  ],
+  creator: "Shilp.io",
 };
 
 export default function RootLayout({
@@ -24,11 +43,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
