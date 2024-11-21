@@ -13,7 +13,7 @@ import {
 	serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import type { UserData, Project, Requirement, Regulation } from "@/types/user";
+import type { UserData } from "@/types/user";
 
 export class UserService {
 	private readonly usersCollection = "users";
@@ -53,63 +53,9 @@ export class UserService {
 		});
 	}
 
-	// Project Management
-	async getUserProjects(projectIds: string[]): Promise<Project[]> {
-		if (!projectIds.length) return [];
-
-		const projectsRef = collection(db, this.projectsCollection);
-		const projectsQuery = query(
-			projectsRef,
-			where(documentId(), "in", projectIds)
-		);
-		const snapshot = await getDocs(projectsQuery);
-
-		return snapshot.docs.map((doc) => ({
-			id: doc.id,
-			...doc.data(),
-		})) as Project[];
-	}
-
-	async getProjectRequirements(
-		projectId: string
-	): Promise<Requirement[]> {
-		if (!projectId) return [];
-
-		const projectRef = doc(db, this.projectsCollection, projectId);
-		const projectSnapshot = await getDoc(projectRef);
-
-		const requirementIds = projectSnapshot.exists() ? projectSnapshot.data().requirementIds : [];
-
-		return requirementIds.map(async (id: string) => {
-			const requirementRef = doc(db, this.requirementsCollection, id);
-			const requirementSnapshot = await getDoc(requirementRef);
-
-			return {
-				id: requirementSnapshot.id,
-				...requirementSnapshot.data(),
-			} as Requirement;
-		});
-	}
-
-	async getProjectRegulations(
-		projectId: string
-	): Promise<Regulation[]> {
-		if (!projectId) return [];
-
-		const projectRef = doc(db, this.projectsCollection, projectId);
-		const projectSnapshot = await getDoc(projectRef);
-
-		const regulationIds = projectSnapshot.exists() ? projectSnapshot.data().regulationIds : [];
-
-		return regulationIds.map(async (id: string) => {
-			const regulationRef = doc(db, this.regulationsCollection, id);
-			const regulationSnapshot = await getDoc(regulationRef);
-
-			return {
-				id: regulationSnapshot.id,
-				...regulationSnapshot.data(),
-			} as Regulation;
-		});
+	async deleteUser(uid: string): Promise<void> {
+		const userRef = doc(db, this.usersCollection, uid);
+		await deleteDoc(userRef);
 	}
 
 	// Project Updates

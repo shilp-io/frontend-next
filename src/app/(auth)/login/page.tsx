@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Github, Mail } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,7 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -45,103 +50,118 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        
-        {error && (
-          <div className="bg-red-50 p-4 rounded text-red-500 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-12">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-800 shadow-sm dark:shadow-lg border-gray-200 dark:border-gray-700">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
+            Welcome back
+          </CardTitle>
+          <CardDescription className="text-center text-gray-500 dark:text-gray-400">
+            Sign in to your account to continue
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="flex items-center gap-2 p-3 mb-6 text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+              <AlertCircle className="h-4 w-4" />
+              <span>{error}</span>
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link href="/reset-password" className="font-medium text-blue-600 hover:text-blue-500">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 
+                    focus:border-red-500 dark:focus:border-red-500 focus:ring-red-500 dark:focus:ring-red-500
+                    text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                />
+              </div>
+              <div className="space-y-2">
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 
+                    focus:border-red-500 dark:focus:border-red-500 focus:ring-red-500 dark:focus:ring-red-500
+                    text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end">
+              <Link
+                href="/reset-password"
+                className="text-sm font-medium text-red-600 hover:text-red-500 dark:text-red-500 dark:hover:text-red-400
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-red-500"
+              >
                 Forgot your password?
               </Link>
             </div>
-          </div>
 
-          <div>
-            <button
+            <Button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600
+                text-white font-medium py-2 rounded-lg transition-colors
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-red-500"
             >
               Sign in
-            </button>
-          </div>
+            </Button>
+          </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full bg-gray-200 dark:bg-gray-700" />
             </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                Google
-              </button>
-              <button
-                type="button"
-                onClick={handleGithubSignIn}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                GitHub
-              </button>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                Or continue with
+              </span>
             </div>
           </div>
-        </form>
 
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Don&apos;t have an account?{' '}
-          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign up
-          </Link>
-        </p>
-      </div>
+          <div className="grid grid-cols-2 gap-3">
+          <Button
+  variant="outline"
+  onClick={handleGoogleSignIn}
+  className="w-full bg-black text-white border border-white hover:bg-gray-900 hover:border-gray-100 transition-colors"
+>
+  <Mail className="mr-2 h-4 w-4" />
+  Google
+</Button>
+
+<Button
+  variant="outline"
+  onClick={handleGithubSignIn}
+  className="w-full bg-black text-white border border-white hover:bg-gray-900 hover:border-gray-100 transition-colors"
+>
+  <Github className="mr-2 h-4 w-4" />
+  GitHub
+</Button>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <p className="text-center w-full text-sm text-gray-600 dark:text-gray-300">
+            Don&apos;t have an account?{' '}
+            <Link 
+              href="/register" 
+              className="font-medium text-red-600 hover:text-red-500 dark:text-red-500 dark:hover:text-red-400
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-red-500"
+            >
+              Sign up
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

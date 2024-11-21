@@ -1,6 +1,7 @@
 // src/app/dashboard/page.tsx
 'use client';
 
+import RequirementsManager from '@/components/document/Manager';
 import { useUser } from '@/context/UserContext'
 import React from 'react';
 
@@ -27,13 +28,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <div className="bg-white shadow rounded-lg p-6">
-        <p>Welcome {userData?.displayName || 'Guest'}!</p>
-        <p className="mt-2 text-gray-600">
-          {userData ? 'Access your projects and settings below.' : 'Please complete your profile to get started.'}
-        </p>
-      </div>
+      <RequirementsManager />
     </div>
   );
 }

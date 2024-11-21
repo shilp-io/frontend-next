@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import { Metadata } from "next";
-import ClientLayout from "./ClientLayout";
+import AppProvider from "./AppProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -30,5 +30,5 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <ClientLayout>{children}</ClientLayout>;
+  return <AppProvider>{children}</AppProvider>;
 }
