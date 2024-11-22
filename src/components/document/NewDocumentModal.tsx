@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useProjects } from '@/context/DataContext';
-import type { ProjectType, Requirement, TaskStatus } from '@/types/data';
+import type { ProjectType, Project, Requirement, TaskStatus } from '@/types/data';
 import { useUser } from '@/context/UserContext';
+import { on } from 'events';
 
 interface NewDocumentModalProps {
   onClose: () => void;
+  onSuccess: (project: Project) => void;
 }
 
-const NewDocumentModal: React.FC<NewDocumentModalProps> = ({ onClose }) => {
+const NewDocumentModal: React.FC<NewDocumentModalProps> = ({ onClose, onSuccess }) => {
   const { create, isLoading, operationError } = useProjects();
   const { userData } = useUser();
   const [formData, setFormData] = useState({
@@ -17,17 +19,16 @@ const NewDocumentModal: React.FC<NewDocumentModalProps> = ({ onClose }) => {
     type: 'product' as ProjectType,
   });
 
-  const userId = userData?.uid ?? 'anonymous';
+  const userId = userData?.uid as string;
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      const newDocument: Partial<Requirement> = {
+      const newDocument: Partial<Project> = {
         title: formData.title,
         description: formData.description,
         type: formData.type,
-        status: 'draft' as TaskStatus,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         permissions: {
@@ -38,8 +39,9 @@ const NewDocumentModal: React.FC<NewDocumentModalProps> = ({ onClose }) => {
         }
       };
 
-      await create<Requirement>('projects', newDocument);
+      const project = await create<Project>('projects', newDocument);
       onClose();
+      onSuccess(project);
     } catch (error) {
       console.error('Failed to create document:', error);
     }

@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import RequirementsManager from '@/components/document/Manager';
+import DocumentManager from '@/components/document/DocumentManager';
 import { useUser } from '@/context/UserContext'
 import React from 'react';
 
@@ -28,7 +28,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <RequirementsManager />
+      <DocumentManager />
     </div>
   );
 }
