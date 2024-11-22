@@ -63,9 +63,11 @@ export interface BatchOperation<T extends Collection> {
 
 // Collection-specific Types
 export interface Requirement extends Collection {
-	title: string;
+	title?: string;
 	description?: string;
+	content?: string;
 	status: TaskStatus;
+	type: RequirementType;
 	priority: Priority;
 	dueDate?: string | Timestamp | FieldValue;
 	completedAt?: string | Timestamp | FieldValue;
@@ -78,6 +80,7 @@ export interface Requirement extends Collection {
 	attachments?: Attachment[];
 	comments?: Comment[];
 	output?: Output[];
+	analysis?: RequirementAnalysis;
 	permissions: Permissions;
 }
 
@@ -87,15 +90,24 @@ export interface Project extends Collection {
 	requirementIds: string[];
 	regulationIds: string[];
 	description?: string;
+	properties?: Properties[];
 	status: ProjectStatus;
 	startDate: string | Timestamp | FieldValue;
 	endDate?: string | Timestamp | FieldValue;
 	members: string[];
-	ownerId: string;
 	settings?: ProjectSettings;
 	metadata?: Record<string, any>;
 	permissions: Permissions;
 }
+
+export type Properties = {
+	id: string;
+	name: string;
+	type: "text" | "date" | "select" | "multiselect" | "number";
+	options?: string[];
+	required?: boolean;
+	width?: number;
+};
 
 export interface Regulation extends Collection {
 	title: string;
@@ -110,6 +122,7 @@ export interface Regulation extends Collection {
 // Enums and Constants
 export enum TaskStatus {
 	TODO = "todo",
+	DRAFT = "draft",
 	IN_PROGRESS = "in_progress",
 	REVIEW = "review",
 	DONE = "done",
@@ -132,6 +145,13 @@ export enum ProjectType {
 	INTERFACE = "interface",
 }
 
+export enum RequirementType {
+	FUNCTIONAL = "functional",
+	NON_FUNCTIONAL = "non_functional",
+	INTERFACE = "interface",
+	PERFORMANCE = "performance",
+}
+
 export enum Priority {
 	LOW = "low",
 	MEDIUM = "medium",
@@ -152,6 +172,14 @@ export interface Output {
 	role: "user" | "assistant";
 	content: string;
 }
+
+export type RequirementAnalysis = {
+	rewrittenEARS: string;
+	rewrittenINCOSE: string;
+	selectedFormat: "EARS" | "INCOSE";
+	feedback: string[];
+	complianceIssues: string[];
+};
 
 export interface Attachment {
 	id: string;
@@ -255,5 +283,3 @@ export type ValidationRule = {
 };
 
 export type ValidationSchema = Record<string, ValidationRule[]>;
-
-

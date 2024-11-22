@@ -5,6 +5,7 @@ import React, {
 	useMemo,
 	useCallback,
 	useRef,
+	useState,
 } from "react";
 import { useUser } from "@/context/UserContext";
 import { FirebaseDataService } from "@/services/dataService";
@@ -20,8 +21,22 @@ import type {
 	CollectionName,
 	UpdateOperation,
 } from "@/types/data";
+import { useCacheStore } from "@/lib/cacheStore";
+import { DEFAULT_CACHE_CONFIG } from "@/lib/cacheStore";
+import type { Project, Requirement, Regulation } from "@/types/data";
+import { WhereFilterOp } from "firebase/firestore";
 
-interface DataContextValue extends DataContextState {
+interface SelectionState {
+	currentUserId: string | null;
+	currentProjectId?: string | null;
+	currentRequirementId?: string | null;
+	currentRegulationId?: string | null;
+	currentProject?: Project | null;
+	currentRequirement?: Requirement | null;
+	currentRegulation?: Regulation | null;
+}
+
+interface DataContextValue extends DataContextState, SelectionState {
 	// CRUD Operations
 	create: <T extends Collection>(
 		collection: CollectionName,
@@ -76,6 +91,16 @@ interface DataContextValue extends DataContextState {
 		queryConfig?: QueryConfig[]
 	) => () => void;
 
+	// Prefetch Collection
+	prefetchCollection: <T extends Collection>(
+		collection: CollectionName,
+		queryConfig?: QueryConfig[]
+	) => Promise<void>;
+
+	setCurrentProject: (projectId: string | null) => Promise<void>;
+	setCurrentRequirement: (requirementId: string | null) => Promise<void>;
+	clearCurrentSelections: () => void;
+
 	// Error Management
 	clearError: () => void;
 }
@@ -100,6 +125,30 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 		operationError: null,
 		cachedData: new Map(),
 	});
+	// Add selection state
+	const [selectionState, setSelectionState] = useState<SelectionState>({
+		currentUserId: userData?.uid || null,
+		currentProjectId: null,
+		currentRequirementId: null,
+		currentRegulationId: null,
+		currentProject: null,
+		currentRequirement: null,
+		currentRegulation: null,
+	});
+
+	const {
+		initialize,
+		setLoading,
+		setError,
+		isInitialized,
+		setCache,
+		getCache,
+		invalidateCache,
+		setCurrentProjectId,
+		setCurrentRequirementId,
+		setCurrentProject,
+		setCurrentRequirement,
+	} = useCacheStore();
 
 	// Error handling wrapper
 	const handleOperation = useCallback(
@@ -146,6 +195,132 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 		[state.isInitialized, state.isLoading]
 	);
 
+	// Selection methods
+	const handleSetCurrentProject = useCallback(
+		async (projectId: string | null) => {
+			setLoading(true);
+			try {
+				if (!projectId) {
+					setSelectionState((prev) => ({
+						...prev,
+						currentProjectId: null,
+						currentProject: null,
+					}));
+					setCurrentProjectId(null);
+					setCurrentProject(null);
+					return;
+				}
+
+				// Try to get from cache first
+				let project = getCache<Project>("projects", projectId);
+
+				// If not in cache, fetch from database
+				if (!project && dataServiceRef.current) {
+					project = await dataServiceRef.current.get<Project>(
+						"projects",
+						projectId
+					);
+					if (project) {
+						setCache("projects", projectId, project);
+					}
+				}
+
+				setSelectionState((prev) => ({
+					...prev,
+					currentProjectId: projectId,
+					currentProject: project,
+				}));
+
+				setCurrentProjectId(projectId);
+				setCurrentProject(project);
+			} catch (error) {
+				setError({
+					message:
+						error instanceof Error
+							? error.message
+							: "Failed to set current project",
+					operation: "setCurrentProject",
+					timestamp: new Date().toISOString(),
+				});
+			} finally {
+				setLoading(false);
+			}
+		},
+		[setLoading, setError, setCache, getCache]
+	);
+
+	const handleSetCurrentRequirement = useCallback(
+		async (requirementId: string | null) => {
+			setLoading(true);
+			try {
+				if (!requirementId) {
+					setSelectionState((prev) => ({
+						...prev,
+						currentRequirementId: null,
+						currentRequirement: null,
+					}));
+					setCurrentRequirementId(null);
+					setCurrentRequirement(null);
+					return;
+				}
+
+				// Try to get from cache first
+				let requirement = getCache<Requirement>(
+					"requirements",
+					requirementId
+				);
+
+				// If not in cache, fetch from database
+				if (!requirement && dataServiceRef.current) {
+					requirement = await dataServiceRef.current.get<Requirement>(
+						"requirements",
+						requirementId
+					);
+					if (requirement) {
+						setCache("requirements", requirementId, requirement);
+					}
+				}
+
+				setSelectionState((prev) => ({
+					...prev,
+					currentRequirementId: requirementId,
+					currentRequirement: requirement,
+				}));
+
+				setCurrentRequirementId(requirementId);
+				setCurrentRequirement(requirement);
+			} catch (error) {
+				setError({
+					message:
+						error instanceof Error
+							? error.message
+							: "Failed to set current requirement",
+					operation: "setCurrentRequirement",
+					timestamp: new Date().toISOString(),
+				});
+			} finally {
+				setLoading(false);
+			}
+		},
+		[setLoading, setError, setCache, getCache]
+	);
+
+	const clearCurrentSelections = useCallback(() => {
+		setSelectionState({
+			currentUserId: userData?.uid || null,
+			currentProjectId: null,
+			currentRequirementId: null,
+			currentProject: null,
+			currentRequirement: null,
+			currentRegulation: null,
+			currentRegulationId: null,
+		});
+		setCurrentProjectId(null);
+		setCurrentRequirementId(null);
+		setCurrentProject(null);
+		setCurrentRequirement(null);
+	}, []);
+
 	// Initialize data service
 	useEffect(() => {
 		if (state.isInitialized || state.isLoading) return;
@@ -160,6 +335,8 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 						cacheConfig
 					);
 				}
+
+				initialize(cacheConfig || DEFAULT_CACHE_CONFIG);
 
 				setState((prev) => ({
 					...prev,
@@ -201,12 +378,42 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 			data: Partial<T>
 		): Promise<T> => {
 			return handleOperation(async () => {
-				if (!dataServiceRef.current)
+				if (!dataServiceRef.current) {
 					throw new Error("Data service not initialized");
-				return dataServiceRef.current.create<T>(collection, {
-					...data,
-					createdBy: userData?.uid || "anonymous",
-				});
+				}
+
+				if (!collection) {
+					throw new Error("Collection name is required");
+				}
+
+				if (!data || Object.keys(data).length === 0) {
+					throw new Error("Data object cannot be empty");
+				}
+
+				try {
+					const enrichedData = {
+						...data,
+						createdBy: userData?.uid || "anonymous",
+						createdAt: new Date().toISOString(),
+					};
+
+					const createdDoc = await dataServiceRef.current.create<T>(
+						collection,
+						enrichedData
+					);
+
+					if (!createdDoc) {
+						throw new Error("Failed to create document");
+					}
+
+					return createdDoc;
+				} catch (error) {
+					throw new Error(
+						`Failed to create document in ${collection}: ${
+							error instanceof Error ? error.message : "Unknown error"
+						}`
+					);
+				}
 			}, "create");
 		},
 		[userData, handleOperation]
@@ -218,12 +425,134 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 			id: string
 		): Promise<T | null> => {
 			return handleOperation(async () => {
+				// Check cache first
+				const cachedData = getCache<T>(collection, id);
+				if (cachedData) {
+					console.log(`Cache hit for ${collection}:${id}`);
+					return cachedData;
+				}
+
+				console.log(`Cache miss for ${collection}:${id}`);
 				if (!dataServiceRef.current)
 					throw new Error("Data service not initialized");
-				return dataServiceRef.current.get<T>(collection, id);
+
+				const data = await dataServiceRef.current.get<T>(
+					collection,
+					id
+				);
+
+				if (data) {
+					setCache(collection, id, data);
+				}
+
+				return data;
 			}, "get");
 		},
 		[handleOperation]
+	);
+
+	// bulk prefetch for a collection
+	const prefetchCollection = useCallback(
+		async <T extends Collection>(
+			collection: CollectionName,
+			queryConfig?: QueryConfig[]
+		): Promise<void> => {
+			return handleOperation(async () => {
+				if (!dataServiceRef.current)
+					throw new Error("Data service not initialized");
+
+				const result = await dataServiceRef.current.query<T>(
+					collection,
+					queryConfig
+				);
+
+				// Cache all fetched documents
+				result.items.forEach((doc) => {
+					setCache(collection, doc.id, doc);
+				});
+			}, "prefetch");
+		},
+		[handleOperation]
+	);
+
+	const update = useCallback(
+		async <T extends Collection>(
+			collection: CollectionName,
+			id: string,
+			updates: Partial<T> | UpdateOperation<T>[]
+		): Promise<T> => {
+			return handleOperation(async () => {
+				if (!dataServiceRef.current)
+					throw new Error("Data service not initialized");
+
+				const updateData = {
+					...(Array.isArray(updates) ? {} : updates),
+					updatedBy: userData?.uid || "anonymous",
+				};
+
+				const updated = await dataServiceRef.current.update<T>(
+					collection,
+					id,
+					Array.isArray(updates)
+						? updates
+						: (updateData as Partial<T>)
+				);
+
+				// Update cache with new data
+				setCache(collection, id, updated);
+
+				return updated;
+			}, "update");
+		},
+		[userData, handleOperation]
+	);
+
+	const remove = useCallback(
+		async (collection: CollectionName, id: string): Promise<void> => {
+			return handleOperation(async () => {
+				if (!dataServiceRef.current)
+					throw new Error("Data service not initialized");
+
+				await dataServiceRef.current.delete(collection, id);
+				// Invalidate cache for deleted item
+				invalidateCache(collection, id);
+			}, "delete");
+		},
+		[handleOperation]
+	);
+
+	// Subscribe to real-time updates
+	const subscribe = useCallback(
+		<T extends Collection>(
+			collection: CollectionName,
+			id: string | null,
+			callback: (data: T | T[] | null) => void,
+			queryConfig?: QueryConfig[]
+		): (() => void) => {
+			if (!dataServiceRef.current)
+				throw new Error("Data service not initialized");
+
+			return dataServiceRef.current.subscribe({
+				collection,
+				document: id || undefined,
+				query: queryConfig,
+				onChange: (data) => {
+					// Update cache with real-time data
+					if (id && data) {
+						setCache(collection, id, data);
+					}
+					callback(data as T | T[] | null);
+				},
+				onError: (error: Error) => {
+					setError({
+						message: error.message,
+						operation: "subscribe",
+						timestamp: new Date().toISOString(),
+					});
+				},
+			});
+		},
+		[]
 	);
 
 	const query = useCallback(
@@ -245,41 +574,71 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 		[handleOperation]
 	);
 
-	const update = useCallback(
-		async <T extends Collection>(
-			collection: CollectionName,
-			id: string,
-			updates: Partial<T> | UpdateOperation<T>[]
-		): Promise<T> => {
-			return handleOperation(async () => {
-				if (!dataServiceRef.current)
-					throw new Error("Data service not initialized");
-				const updateData = {
-					...(Array.isArray(updates) ? {} : updates),
-					updatedBy: userData?.uid || "anonymous",
-				};
-				return dataServiceRef.current.update<T>(
-					collection,
-					id,
-					Array.isArray(updates)
-						? updates
-						: (updateData as Partial<T>)
-				);
-			}, "update");
-		},
-		[userData, handleOperation]
-	);
+	// Subscribe to selected items for real-time updates
+	useEffect(() => {
+		if (!selectionState.currentProjectId || !dataServiceRef.current) return;
 
-	const remove = useCallback(
-		async (collection: CollectionName, id: string): Promise<void> => {
-			return handleOperation(async () => {
-				if (!dataServiceRef.current)
-					throw new Error("Data service not initialized");
-				return dataServiceRef.current.delete(collection, id);
-			}, "delete");
-		},
-		[handleOperation]
-	);
+		const unsubscribe = dataServiceRef.current.subscribe({
+			collection: "projects",
+			document: selectionState.currentProjectId,
+			onChange: (data) => {
+				if (data) {
+					setCache(
+						"projects",
+						selectionState.currentProjectId!,
+						data
+					);
+					setSelectionState((prev) => ({
+						...prev,
+						currentProject: data as Project,
+					}));
+					setCurrentProject(data as Project);
+				}
+			},
+			onError: (error: Error) => {
+				setError({
+					message: error.message,
+					operation: "projectSubscription",
+					timestamp: new Date().toISOString(),
+				});
+			},
+		});
+
+		return () => unsubscribe();
+	}, [selectionState.currentProjectId]);
+
+	useEffect(() => {
+		if (!selectionState.currentRequirementId || !dataServiceRef.current)
+			return;
+
+		const unsubscribe = dataServiceRef.current.subscribe({
+			collection: "requirements",
+			document: selectionState.currentRequirementId,
+			onChange: (data) => {
+				if (data) {
+					setCache(
+						"requirements",
+						selectionState.currentRequirementId!,
+						data
+					);
+					setSelectionState((prev) => ({
+						...prev,
+						currentRequirement: data as Requirement,
+					}));
+					setCurrentRequirement(data as Requirement);
+				}
+			},
+			onError: (error: Error) => {
+				setError({
+					message: error.message,
+					operation: "requirementSubscription",
+					timestamp: new Date().toISOString(),
+				});
+			},
+		});
+
+		return () => unsubscribe();
+	}, [selectionState.currentRequirementId]);
 
 	// Batch Operations
 	const executeBatch = useCallback(
@@ -359,37 +718,6 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 		[handleOperation]
 	);
 
-	// Subscriptions
-	const subscribe = useCallback(
-		<T extends Collection>(
-			collection: CollectionName,
-			id: string | null,
-			callback: (data: T | T[] | null) => void,
-			queryConfig?: QueryConfig[]
-		): (() => void) => {
-			if (!dataServiceRef.current)
-				throw new Error("Data service not initialized");
-
-			return dataServiceRef.current.subscribe({
-				collection,
-				document: id || undefined,
-				query: queryConfig,
-				onChange: callback,
-				onError: (error: Error) => {
-					setState((prev) => ({
-						...prev,
-						operationError: {
-							message: error.message,
-							operation: "subscribe",
-							timestamp: new Date().toISOString(),
-						},
-					}));
-				},
-			});
-		},
-		[]
-	);
-
 	const clearError = useCallback(() => {
 		setState((prev) => ({ ...prev, operationError: null }));
 	}, []);
@@ -397,6 +725,7 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 	const value = useMemo(
 		() => ({
 			...state,
+			...selectionState,
 			create,
 			get,
 			query,
@@ -407,7 +736,14 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 			appendToArray,
 			removeFromArray,
 			subscribe,
+			prefetchCollection,
 			clearError,
+			isLoading: useCacheStore.getState().isLoading,
+			isInitialized: useCacheStore.getState().isInitialized,
+			operationError: useCacheStore.getState().operationError,
+			setCurrentProject: handleSetCurrentProject,
+			setCurrentRequirement: handleSetCurrentRequirement,
+			clearCurrentSelections,
 		}),
 		[
 			state,
@@ -421,7 +757,12 @@ export function DataProvider({ children, cacheConfig }: DataProviderProps) {
 			appendToArray,
 			removeFromArray,
 			subscribe,
+			prefetchCollection,
 			clearError,
+			selectionState,
+			handleSetCurrentProject,
+			handleSetCurrentRequirement,
+			clearCurrentSelections,
 		]
 	);
 
@@ -459,6 +800,8 @@ export function useProjects() {
 				}
 				return data.query("projects");
 			},
+			currentProject: data.currentProject,
+			setCurrentProject: data.setCurrentProject,
 		}),
 		[data]
 	);
@@ -477,6 +820,8 @@ export function useRequirements() {
 				}
 				return data.query("requirements");
 			},
+			currentRequirement: data.currentRequirement,
+			setCurrentRequirement: data.setCurrentRequirement,
 		}),
 		[data]
 	);

@@ -47,6 +47,7 @@ import {
 	Regulation,
 	IncrementValue,
 	ArrayValue,
+	RequirementType,
 } from "@/types/data";
 import { debug } from "console";
 import { initialize } from "next/dist/server/lib/render-server";
@@ -75,7 +76,6 @@ export const DocumentFactory = {
 			status: ProjectStatus.PLANNING,
 			startDate: serverTimestamp(),
 			members: [],
-			ownerId: "",
 			permissions: {
 				view: [],
 				edit: [],
@@ -95,6 +95,7 @@ export const DocumentFactory = {
 			title: "",
 			status: TaskStatus.TODO,
 			priority: Priority.MEDIUM,
+			type: RequirementType.FUNCTIONAL,
 			projectId: "",
 			regulationIds: [],
 			permissions: {

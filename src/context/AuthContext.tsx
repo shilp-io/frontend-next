@@ -51,7 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               photoURL: user.photoURL || undefined
             });
           }
-          setUserData(userData ? { ...userData, displayName: userData.displayName || '' } : null);
+          setUserData(userData ? { 
+            ...userData, 
+            displayName: userData.displayName || '',
+          } : null);
         } catch (error: any) {
           setError({ code: error.code, message: error.message });
         }
