@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
-import { useRequirements } from '@/context/DataContext';
+import { useRegulations } from '@/context/DataContext';
 
 interface RegulationDocumentModalProps {
   onClose: () => void;
 }
 
 const RegulationDocumentModal: React.FC<RegulationDocumentModalProps> = ({ onClose }) => {
-  const { addRegulationDocument } = useRequirements();
+  const { create: addRegulationDocument } = useRegulations();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -16,7 +16,7 @@ const RegulationDocumentModal: React.FC<RegulationDocumentModalProps> = ({ onClo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addRegulationDocument(formData);
+    addRegulationDocument('regulations', formData);
     onClose();
   };
 

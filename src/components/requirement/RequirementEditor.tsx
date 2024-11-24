@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Save, X, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useGumloop } from "@/lib/gumloop";
 import {
 	Priority,
 	RequirementType,
@@ -7,7 +8,8 @@ import {
 	type Requirement,
 } from "@/types/data";
 import { useData, useProjects, useRequirements } from "@/context/DataContext";
-import { Permissions } from "@/types/data";
+import { Permissions, Output } from "@/types/data";
+import AnalysisDisplay from "./AnalysisDisplay";
 
 interface RequirementEditorProps {
 	onClose: () => void;
@@ -31,10 +33,11 @@ const RequirementEditor: React.FC<RequirementEditorProps> = ({ onClose }) => {
 		priority: "medium" as Priority,
 	});
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
-	const [analysis, setAnalysis] = useState<Requirement["analysis"] | null>(
-		null
-	);
+	const [analysis, setAnalysis] = useState<string| null>(null);
 	const [showAnalysis, setShowAnalysis] = useState(false);
+	const [output, setOutput] = useState<Output[]>([]);
+	const [activeRunId, setActiveRunId] = useState<string | null>(null);
+	const { startPipeline, getPipelineRun } = useGumloop();
 
 	useEffect(() => {
 		if (currentRequirement) {
@@ -45,7 +48,7 @@ const RequirementEditor: React.FC<RequirementEditorProps> = ({ onClose }) => {
 				priority: currentRequirement.priority || "medium",
 			});
 			if (currentRequirement.analysis) {
-				setAnalysis(currentRequirement.analysis);
+				setAnalysis(currentRequirement.analysis.rewrittenEARS);
 				setShowAnalysis(true);
 			}
 		}
@@ -56,19 +59,66 @@ const RequirementEditor: React.FC<RequirementEditorProps> = ({ onClose }) => {
 
 		setIsAnalyzing(true);
 		try {
-			const result = await analyzeRequirement(formData.content, []);
-			setAnalysis(result);
-			setShowAnalysis(true);
-			setFormData((prev) => ({
-				...prev,
-				content: result
-					? result.selectedFormat === "EARS"
-						? result.rewrittenEARS
-						: result.rewrittenINCOSE
-					: prev.content,
-			}));
+
+			const response = await startPipeline(
+                formData.content,
+            );
+            
+            if (!response?.run_id) {
+                throw new Error('No run ID received from pipeline');
+            }
+
+			// Update Project with new requirementd TODO
+
+            setActiveRunId(response.run_id);
+
+
+			const pollPipelineStatus = async () => {
+                const run = await getPipelineRun(response.run_id);
+                if (run) {
+                    switch (run.state) {
+                        case 'DONE':
+                            const assistantMessage = {
+                                role: 'assistant',
+                                content: run.outputs?.output || 'Success!'
+                            };
+                            setOutput(prev => [...prev, assistantMessage as Output]);
+                            setIsAnalyzing(false);
+							setAnalysis(assistantMessage.content);
+							setShowAnalysis(true);
+                            clearInterval(pollInterval);
+
+							// Update Project with new requirement TODO 
+
+                            break;
+                        case 'RUNNING':
+                            // Keep loading state true while running
+                            setIsAnalyzing(true);
+                            break;
+                        case 'FAILED':
+                            setOutput(prev => [...prev, {
+                                role: 'assistant',
+                                content: 'Pipeline run failed. Please try again.'
+                            }]);
+                            setIsAnalyzing(false);
+                            clearInterval(pollInterval);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            const pollInterval = setInterval(pollPipelineStatus, 1000);
 		} catch (error) {
 			console.error("Analysis failed:", error);
+			setOutput((prev) => [
+				...prev,
+				{
+					role: "assistant",
+					content: "Analysis failed. Please try again.",
+				},
+			]);
 		} finally {
 			setIsAnalyzing(false);
 		}
@@ -278,41 +328,11 @@ const RequirementEditor: React.FC<RequirementEditorProps> = ({ onClose }) => {
 					</div>
 				</form>
 			</div>
+			{showAnalysis && (
+        <AnalysisDisplay aiOutput={analysis as string}/>
+      )}
 		</div>
 	);
 };
 
 export default RequirementEditor;
-
-async function analyzeRequirement(
-	content: string,
-	contextRequirements: any[] = []
-): Promise<{
-	selectedFormat: "EARS" | "INCOSE";
-	rewrittenEARS: string;
-	rewrittenINCOSE: string;
-	ambiguityScore: number;
-	qualityScore: number;
-	suggestions: string[];
-	feedback: string[];
-	complianceIssues: string[];
-}> {
-	try {
-		const response = await fetch("/api/analyze-requirement", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ content, contextRequirements }),
-		});
-
-		if (!response.ok) {
-			throw new Error("Analysis failed");
-		}
-
-		return await response.json();
-	} catch (error) {
-		console.error("Error analyzing requirement:", error);
-		throw error;
-	}
-}

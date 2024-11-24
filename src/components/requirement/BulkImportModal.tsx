@@ -7,12 +7,12 @@ interface BulkImportModalProps {
 }
 
 const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose }) => {
-  const { currentProject } = useData();
+  const { create: addRequirement, currentProject } = useData();
   const [text, setText] = useState('');
   const [separator, setSeparator] = useState('line');
   const [preview, setPreview] = useState<string[]>([]);
 
-  if (!currentDocument) return null;
+  if (!currentProject) return null;
 
   const handleTextChange = (value: string) => {
     setText(value);
@@ -24,7 +24,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose }) => {
 
   const handleImport = () => {
     preview.forEach(content => {
-      addRequirement(currentDocument.id, {
+      addRequirement('requirements', {
         content,
         type: 'functional',
         status: 'draft',

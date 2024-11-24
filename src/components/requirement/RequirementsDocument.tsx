@@ -3,12 +3,8 @@ import { Plus, Settings, Upload, Table, List, FileDown } from "lucide-react";
 import { useData, useRequirements, useProjects } from "@/context/DataContext";
 import RequirementsTable from "./RequirementsTable";
 import RequirementEditor from "./RequirementEditor";
-import ColumnManager from "./ColumnManager";
 import ExternalDocumentUpload from "@/components/regulation/ExternalDocumentUpload";
-import ExternalDocumentViewer from "@/components/regulation/ExternalDocumentViewer";
 import SimpleRequirementsView from "./SimpleRequirementsView";
-import ExportMenu from "./ExportMenu";
-import BulkImportModal from "./BulkImportModal";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import type { Project, Requirement } from "@/types/data";
 
@@ -22,10 +18,8 @@ const RequirementsDocument: React.FC<RequirementsDocumentProps> = ({
 	requirements,
 }) => {
 	const {
-		currentUserId,
 		currentProject,
 		currentRequirement,
-		setCurrentRequirement,
 		operationError,
 		clearError,
 		isLoading,
@@ -125,11 +119,6 @@ const RequirementsDocument: React.FC<RequirementsDocumentProps> = ({
 								<FileDown className="w-4 h-4 mr-2" />
 								Export
 							</button>
-							{showExportMenu && (
-								<ExportMenu
-									onClose={() => setShowExportMenu(false)}
-								/>
-							)}
 						</div>
 
 						<button
