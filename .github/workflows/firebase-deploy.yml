@@ -18,7 +18,7 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Build and Export
+      - name: Build
         run: bun run build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
