@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
     unoptimized: true
   },
   output: 'export',
+  skipTrailingSlashRedirect: true,
+  distDir: '.next'
 };
 
 export default nextConfig;

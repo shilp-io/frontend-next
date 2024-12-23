@@ -27,6 +27,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lockb') }}-
       
+      - name: Verify Environment Variables
+        run: |
+          if [ -z "$NEXT_PUBLIC_FIREBASE_API_KEY" ]; then
+            echo "Firebase API key is missing"
+            exit 1
+          fi
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      
       - name: Build
         run: bun run build
         env:
