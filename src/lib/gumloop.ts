@@ -1,7 +1,7 @@
-const GUMLOOP_API_KEY = '37d086fd263349acbd91f4820664a36c';
-const GUMLOOP_API_URL = 'https://api.gumloop.com/api/v1';
-const USER_ID = 'fA7XMmX3SHR5e6x7EMiGptFdsPq1';
-const SAVED_ITEM_ID = 'dvjmi1c4CJPREjw4gRFug6';
+const GUMLOOP_API_KEY = process.env.NEXT_PUBLIC_GUMLOOP_API_KEY || '';
+const GUMLOOP_API_URL = process.env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1';
+const USER_ID = process.env.NEXT_PUBLIC_GUMLOOP_USER_ID || '';
+const SAVED_ITEM_ID = process.env.NEXT_PUBLIC_GUMLOOP_SAVED_ITEM_ID || '';
 
 interface PipelineInput {
     input_name: string;
