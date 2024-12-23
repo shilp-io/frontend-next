@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Atom | Requirements Engineering</title>
+    <meta name="description" content="AI-powered requirements engineering tool for analyzing and validating engineering requirements against regulatory documents.">
+    <style>
+      #loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #ffffff;
+      }
+      .dark #loader {
+        background-color: #1a1a1a;
+      }
+      .loading-text {
+        color: #000000;
+        font-size: 1.5rem;
+      }
+      .dark .loading-text {
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader">
+      <div class="loading-text">Loading...</div>
+    </div>
+    <script>
+      // Handle dark mode
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark');
+      }
+    </script>
+  </body>
+</html>
