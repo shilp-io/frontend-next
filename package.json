@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "bun run build && firebase deploy --only hosting"
+    "deploy": "bun run build && firebase deploy --only hosting",
+    "deploy:preview": "firebase hosting:channel:deploy preview_$(date +%s)",
+    "clean": "rm -rf .next out"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

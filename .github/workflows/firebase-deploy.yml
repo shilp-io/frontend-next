@@ -9,15 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
+      
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-
+      
       - name: Install Dependencies
         run: bun install
-
+        
+      - name: Cache Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lockb') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lockb') }}-
+      
       - name: Build
         run: bun run build
         env:
@@ -31,7 +40,7 @@ jobs:
           NEXT_PUBLIC_GUMLOOP_API_URL: ${{ secrets.NEXT_PUBLIC_GUMLOOP_API_URL }}
           NEXT_PUBLIC_GUMLOOP_USER_ID: ${{ secrets.NEXT_PUBLIC_GUMLOOP_USER_ID }}
           NEXT_PUBLIC_GUMLOOP_SAVED_ITEM_ID: ${{ secrets.NEXT_PUBLIC_GUMLOOP_SAVED_ITEM_ID }}
-
+      
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
